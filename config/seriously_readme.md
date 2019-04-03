@@ -29,4 +29,4 @@ Example workflow:
   5. run ```!cp /content/gdrive/My\ Drive/train_dir_name /content/train_dir_name```
   6. Rerun notebook to resume training.
   
-Do not forget to change the path in the training command.
+Do not forget to change the path in the training command. Also, if you are using Tensorboard to monitor, you will need to change the path in the tensorboard command as well.
