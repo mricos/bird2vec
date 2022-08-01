@@ -1,5 +1,5 @@
 # bird2vec
-Bird2vec was a collaboration between conceptual artist Nire and Mike Ricos and Will Morgan.
+Bird2vec was a collaboration between conceptual artist Nire, Mike Ricos and Will Morgan.
 
 We achieved her vision of a research based art project
  using machine learning to  create novel bird sounds that are "sonically-consistent" 
