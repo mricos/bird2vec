@@ -14,6 +14,7 @@ import { initTabs } from './ui/tabs.js';
 import { initDataPanel, renderDataTab } from './ui/data-panel.js';
 import { initWikiPanel } from './ui/wiki-panel.js';
 import { startSession, syntheticTrain } from './cbp/wiring.js';
+import { mountSonogeneTab } from './sonogene/panel.js';
 
 // Generators
 let harmonicGen, waveganGen;
@@ -182,6 +183,10 @@ function renderActiveTab() {
 
   if (tab === 'data') {
     renderDataTab();
+  }
+
+  if (tab === 'sonogene') {
+    mountSonogeneTab();
   }
 
   if (tab === 'jewels') {
