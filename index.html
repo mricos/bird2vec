@@ -251,6 +251,19 @@
             Metrics populate during training. Use the generator to explore the
             latent space and listen to how different z vectors sound.
           </div>
+          <div class="data-section" style="margin-top:12px">
+            <h3 class="section-title">Coilboard (CBP v0.2)</h3>
+            <div class="info" style="margin-bottom:6px">
+              This iframe session is logging every <strong>Generate</strong> click as a CBP run
+              (<code>$TETRA_DIR/coilboard/db/&lt;ts&gt;.run.bird2vec-&lt;rand&gt;/</code>).
+              Each step writes <code>z</code> as an embedding plus the audio as a sample
+              with provenance — Coilboard can then chart, compare, and replay your exploration.
+            </div>
+            <div class="btn-row">
+              <button class="btn" id="btn-synthetic-train">Synthetic Train (200 steps)</button>
+              <button class="btn btn-primary" id="btn-open-coilboard">Open Coilboard ↗</button>
+            </div>
+          </div>
         </div>
 
         <!-- GAN tab — annotated WaveGAN architecture -->

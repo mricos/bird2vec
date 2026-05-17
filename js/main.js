@@ -13,6 +13,7 @@ import { initSidebar, buildDimSliders } from './ui/sidebar.js';
 import { initTabs } from './ui/tabs.js';
 import { initDataPanel, renderDataTab } from './ui/data-panel.js';
 import { initWikiPanel } from './ui/wiki-panel.js';
+import { startSession, syntheticTrain } from './cbp/wiring.js';
 
 // Generators
 let harmonicGen, waveganGen;
@@ -58,6 +59,15 @@ function init() {
   window.addEventListener('resize', () => emit('resize'));
 
   updateStats();
+
+  // CBP: start a session run (fire-and-forget; tolerates absent /api/coilboard)
+  startSession().catch(e => console.warn('[cbp] session start failed:', e.message));
+
+  // Wire the Synthetic Train demo button if present (Metrics tab).
+  document.getElementById('btn-synthetic-train')?.addEventListener('click', () => syntheticTrain(200));
+  document.getElementById('btn-open-coilboard')?.addEventListener('click', () => {
+    window.open('/coilboard.iframe.html', '_blank');
+  });
 }
 
 function initJewels() {
@@ -121,6 +131,9 @@ function generate() {
 
   renderActiveTab();
   updateStats();
+
+  // CBP: record this step (z, audio, derived scalars). No-op if proxy is down.
+  emit('audio:generated');
 }
 
 function onLatentChanged() {
