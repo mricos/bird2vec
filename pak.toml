@@ -1,0 +1,47 @@
+# bird2vec — Tetra Pak Manifest
+#
+# Source of truth for this pak. Edit this file; `tetra pak build` reads
+# it and emits pak.json which is what tetra actually consumes at runtime.
+#
+# Spec: ~/src/devops/tetra/docs/specs/TPA_TETRA_PAK_AUTHORING.md
+
+[pak]
+name        = "bird2vec"
+version     = "0.1.0"
+description = "Latent space audio synthesis — WaveGAN-inspired bird-call generator with TensorBoard-lite UI"
+author      = "nire"
+homepage    = "https://vimeo.com/336814705"
+license     = "MIT"
+minRole     = "lab"
+tags        = ["audio", "ml", "wavegan", "latent-space", "synthesis", "lab"]
+
+# Dashboard iframe. `src` resolves through the primary mount below,
+# so the effective URL becomes /bird2vec/tetra/bird2vec.iframe.html
+[iframe]
+src       = "tetra/bird2vec.iframe.html"
+label     = "bird2vec"
+category  = "apps"
+localOnly = true
+
+# Primary mount — serves the whole pak tree at /bird2vec/.
+# The iframe wrapper references ../index.html and ../css/ ../js/ from here.
+[mounts.primary]
+path = "/bird2vec"
+root = "./"
+
+# Ring-0 service (optional). If a user wants bird2vec running on its own
+# port (separate from the dashboard static mount), this declares it for
+# TSM. Mirrors the existing tsm/env.toml entry.
+[services.http]
+script    = "tsm/b2v.tsm"
+port      = 6201
+autostart = false
+
+[infrastructure]
+tier = "static"
+
+[dependencies]
+tetra = ">=1.0"
+
+[suggested]
+suites = ["pja-lab", "ai"]

@@ -1,0 +1,27 @@
+{
+  "manifestVersion": 2,
+  "pak": {
+    "name": "bird2vec",
+    "version": "0.1.0",
+    "description": "Latent space audio synthesis — WaveGAN-inspired bird-call generator with TensorBoard-lite UI",
+    "author": "nire",
+    "homepage": "https://vimeo.com/336814705",
+    "license": "MIT",
+    "minRole": "lab",
+    "kind": "tool",
+    "tags": ["audio", "ml", "wavegan", "latent-space", "synthesis", "lab"]
+  },
+  "iframe": {
+    "src": "tetra/bird2vec.iframe.html",
+    "label": "bird2vec",
+    "enabled": true,
+    "minRole": "lab",
+    "localOnly": true,
+    "category": "apps",
+    "description": "Latent space audio synthesis — WaveGAN-inspired bird-call generator with TensorBoard-lite UI"
+  },
+  "mount": [
+    { "path": "/bird2vec", "root": "./" }
+  ],
+  "dependencies": { "tetra": ">=1.0", "paks": [] }
+}

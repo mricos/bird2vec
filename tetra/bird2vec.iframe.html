@@ -1,0 +1,42 @@
+<!--
+  bird2vec iframe wrapper — Tetra Pak entry point
+
+  SDC self-doc header:
+    MODULE:    bird2vec
+    PURPOSE:   Latent space audio synthesis dashboard (WaveGAN + harmonic generator)
+    DISCOVERY: pak.toml at repo root; TPA spec at
+               docs/specs/TPA_TETRA_PAK_AUTHORING.md
+    KEY FEATURES:
+      - 100D latent → generator → waveform
+      - Xeno-Canto ingest, spectrogram/metric plots, jewel interpolation
+    RELATED:
+      - ../index.html    standalone SPA (same app)
+      - ../notebook.html training notebook viewer
+      - ../config/       tensorboard_wavegan.ipynb & WaveGAN notebooks
+
+  Level 1 (Terrain) integration — the heavyweight SPA lives in ../index.html.
+  This wrapper just embeds it and subscribes to env changes so the pak
+  participates in the tetra bus.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="tetra-module" content="bird2vec">
+  <title>bird2vec</title>
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; background: #000; }
+    iframe    { width: 100%; height: 100%; border: 0; display: block; }
+  </style>
+</head>
+<body>
+  <iframe id="app" src="../index.html" allow="microphone; autoplay"></iframe>
+  <script src="/js/tetra-iframe.js"></script>
+  <script>
+    if (window.Tetra && Tetra.Iframe) {
+      Tetra.Iframe.init({ name: 'bird2vec' });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>bird2vec — TensorBoard Lite</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <header class="header">
+    <h1><span>bird2vec</span> tensorboard</h1>
+    <a href="notebook.html" style="color:var(--blue);text-decoration:none;font-size:11px">Notebook</a>
+    <div id="stats"></div>
+  </header>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-handle" id="sidebar-handle"></div>
+
+      <!-- Generator -->
+      <details class="section" open>
+        <summary>Generator</summary>
+        <div class="section-body">
+          <label>Mode</label>
+          <select id="gen-mode">
+            <option value="harmonic" selected>Harmonic (bird-like)</option>
+            <option value="wavegan">WaveGAN (deterministic)</option>
+          </select>
+
+          <label style="margin-top:8px;display:block">Audio Length</label>
+          <select id="audio-length">
+            <option value="8192">8192 (0.5s)</option>
+            <option value="16384" selected>16384 (1s)</option>
+            <option value="32768">32768 (2s)</option>
+          </select>
+
+          <div class="btn-row">
+            <button class="btn btn-primary" id="btn-generate">Generate</button>
+            <button class="btn" id="btn-play">Play</button>
+            <button class="btn" id="btn-stop">Stop</button>
+            <button class="btn" id="btn-download">WAV</button>
+          </div>
+        </div>
+      </details>
+
+      <!-- Latent Vector -->
+      <details class="section" open>
+        <summary>Latent Space</summary>
+        <div class="section-body">
+          <div class="btn-row">
+            <button class="btn" id="btn-randomize">Random</button>
+            <button class="btn" id="btn-zero">Zero</button>
+            <button class="btn" id="btn-jewel-next">Jewel ▸</button>
+          </div>
+          <div id="jewel-label" style="font-size:10px;color:var(--text-muted);margin-top:4px">Jewel —</div>
+
+          <div class="latent-preview">
+            <canvas id="canvas-latent" width="200" height="60"></canvas>
+          </div>
+
+          <div id="dim-sliders" style="margin-top:8px;max-height:300px;overflow-y:auto"></div>
+        </div>
+      </details>
+
+      <!-- Interpolation -->
+      <details class="section">
+        <summary>Interpolation</summary>
+        <div class="section-body">
+          <div class="info">
+            Interpolates between Jewel A (current) and Jewel B.<br>
+            Use <code>Jewel ▸</code> to set endpoints.
+          </div>
+          <div class="interp-row" style="margin-top:8px">
+            <label>t</label>
+            <input type="range" id="interp-slider" min="0" max="1" step="0.01" value="0">
+            <span class="interp-val" id="interp-val">0.00</span>
+          </div>
+        </div>
+      </details>
+
+      <!-- Reference Links -->
+      <details class="section" open>
+        <summary>Reference</summary>
+        <div class="section-body">
+          <div id="ref-links"></div>
+        </div>
+      </details>
+
+      <!-- Info -->
+      <details class="section">
+        <summary>About</summary>
+        <div class="section-body info">
+          <p><strong>bird2vec</strong> — latent space audio synthesis</p>
+          <p style="margin-top:6px">
+            100D latent → generator → audio waveform.
+            Based on WaveGAN.
+          </p>
+          <p style="margin-top:6px;color:var(--text-muted)">
+            Keys: 1-7 tabs · Esc close panel
+          </p>
+        </div>
+      </details>
+    </aside>
+
+    <!-- Content + Wiki panel wrapper -->
+    <div class="content-wrap">
+
+    <!-- Content -->
+    <div class="content">
+
+      <!-- Tab bar -->
+      <nav class="tab-bar">
+        <button class="tab-btn" data-tab="data">Data</button>
+        <button class="tab-btn active" data-tab="generate">Generate</button>
+        <button class="tab-btn" data-tab="explore">Explore</button>
+        <button class="tab-btn" data-tab="spectrogram">Spectrogram</button>
+        <button class="tab-btn" data-tab="jewels">Jewels</button>
+        <button class="tab-btn" data-tab="metrics">Metrics</button>
+        <button class="tab-btn" data-tab="gan">GAN</button>
+      </nav>
+
+      <!-- Tab content -->
+      <div class="tab-content">
+
+        <!-- Data tab -->
+        <div class="tab-pane" id="tab-data">
+          <div class="data-section">
+            <h3 class="section-title">Xeno-Canto Bird Recordings (API v3)</h3>
+            <div class="search-row" style="margin-bottom:6px">
+              <input type="password" id="xc-key" class="text-input" placeholder="API key (xeno-canto.org account)" style="flex:0 0 180px">
+            </div>
+            <div class="search-row">
+              <input type="text" id="xc-query" class="text-input" placeholder='en:"common blackbird"' value='en:"common blackbird"'>
+              <button class="btn btn-primary" id="btn-xc-search">Search</button>
+            </div>
+            <div class="info" style="margin-top:4px">Tags: <code>en:</code> <code>gen:</code> <code>sp:</code> <code>cnt:</code> <code>q:</code> <code>type:song</code></div>
+            <div id="xc-results" class="xc-results"></div>
+          </div>
+
+          <div class="data-section">
+            <h3 class="section-title">Extinct & Critically Endangered <span style="color:var(--text-muted);font-weight:normal">— voices to preserve</span></h3>
+            <div class="info" style="margin-bottom:8px">
+              One-click load curated species. This pak's existing checkpoint
+              (<code>wgtrain-stream-kauai-6-2sec</code>) was trained on Kauaʻi field
+              recordings — these species share that acoustic context. Recording
+              the latent space of a bird that no longer sings is the point of
+              "tubes of dust."
+            </div>
+            <div id="extinct-chips" class="btn-row" style="flex-wrap:wrap;gap:6px"></div>
+            <div class="info" style="margin-top:6px;font-size:10px">
+              ▸ Clicking a chip populates the search box and runs the query · then use <strong>+ Add</strong> on each result, or <strong>Add all</strong> below to bulk-ingest at quality A.
+            </div>
+            <div class="btn-row" style="margin-top:6px">
+              <button class="btn" id="btn-xc-add-all">Add all results to dataset</button>
+              <button class="btn" id="btn-extinct-prep">Recommend prep settings</button>
+            </div>
+            <div id="extinct-prep-out" class="info" style="margin-top:6px"></div>
+          </div>
+
+          <div class="data-section">
+            <h3 class="section-title">Local Audio Files</h3>
+            <div class="info" style="margin-bottom:8px">WAV, MP3, OGG, FLAC — decoded and sliced into training chunks</div>
+            <label class="file-label">
+              <input type="file" id="file-input" accept="audio/*" multiple hidden>
+              <span class="btn">Choose Files</span>
+            </label>
+          </div>
+
+          <div class="data-section">
+            <h3 class="section-title">Synthetic Data</h3>
+            <div class="synth-row">
+              <label>Samples</label>
+              <input type="number" id="synthetic-count" class="text-input" value="50" min="1" max="500" style="width:80px">
+              <button class="btn" id="btn-synthetic">Generate</button>
+            </div>
+          </div>
+
+          <div class="data-section">
+            <h3 class="section-title">Dataset</h3>
+            <div id="dataset-info"><span class="info">No training data loaded</span></div>
+            <div class="btn-row" style="margin-top:8px">
+              <button class="btn" id="btn-clear-data">Clear All</button>
+            </div>
+          </div>
+
+          <div class="canvas-row" style="margin-top:12px">
+            <div class="canvas-wrap">
+              <canvas id="canvas-data-preview" height="180"></canvas>
+            </div>
+            <div class="canvas-wrap">
+              <canvas id="canvas-data-spec" height="180"></canvas>
+            </div>
+          </div>
+
+          <div id="data-status" class="data-status"></div>
+        </div>
+
+        <!-- Generate tab -->
+        <div class="tab-pane active" id="tab-generate">
+          <div class="canvas-row">
+            <div class="canvas-wrap">
+              <canvas id="canvas-waveform" height="200"></canvas>
+            </div>
+            <div class="canvas-wrap">
+              <canvas id="canvas-spectrogram" height="200"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Explore tab -->
+        <div class="tab-pane" id="tab-explore">
+          <div class="canvas-row">
+            <div class="canvas-wrap">
+              <canvas id="canvas-scatter" height="250"></canvas>
+            </div>
+            <div class="canvas-wrap">
+              <canvas id="canvas-interp" height="250"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Spectrogram tab -->
+        <div class="tab-pane" id="tab-spectrogram">
+          <div class="canvas-wrap canvas-full">
+            <canvas id="canvas-spec-full" height="400"></canvas>
+          </div>
+        </div>
+
+        <!-- Jewels tab -->
+        <div class="tab-pane" id="tab-jewels">
+          <div class="jewel-grid" id="jewel-grid"></div>
+        </div>
+
+        <!-- Metrics tab -->
+        <div class="tab-pane" id="tab-metrics">
+          <div class="canvas-row">
+            <div class="canvas-wrap">
+              <canvas id="canvas-loss" height="200"></canvas>
+            </div>
+            <div class="canvas-wrap">
+              <canvas id="canvas-hist" height="200"></canvas>
+            </div>
+          </div>
+          <div class="info" style="margin-top:8px">
+            Metrics populate during training. Use the generator to explore the
+            latent space and listen to how different z vectors sound.
+          </div>
+        </div>
+
+        <!-- GAN tab — annotated WaveGAN architecture -->
+        <div class="tab-pane" id="tab-gan">
+          <div class="data-section">
+            <h3 class="section-title">Architecture · WaveGAN (Donahue, McAuley, Puckette · 2018 · <a href="https://arxiv.org/abs/1802.04208" target="_blank" rel="noopener" style="color:var(--blue)">arXiv:1802.04208</a>)</h3>
+            <div class="info" style="margin-bottom:8px">
+              Confirmed from <code>wavegan_generate.ipynb</code> + <code>bird2vec_generate.ipynb</code>: loads <code>wavegan-v1</code> checkpoints, latent <code>z ∈ R<sup>100</sup></code> ~ U[−1,1], generator emits 16384-sample raw waveform at 16 kHz (~1 s). Trained on the Kauaʻi field-recording set (<code>wgtrain-stream-kauai-6-2sec</code>). Not wav2vec 2.0 (contrastive SSL); not VAE.
+            </div>
+
+            <svg viewBox="0 0 880 360" style="width:100%;height:auto;background:var(--bg-inset);border:1px solid var(--border);border-radius:4px" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                  <path d="M0,0 L10,5 L0,10 z" fill="#8b949e"/>
+                </marker>
+                <style>
+                  .lbl { fill:#c9d1d9; font:11px 'SF Mono',Consolas,monospace; }
+                  .sub { fill:#8b949e; font:9px 'SF Mono',Consolas,monospace; }
+                  .ttl { fill:#58a6ff; font:bold 12px 'SF Mono',Consolas,monospace; }
+                  .red { fill:#f85149; font:bold 12px 'SF Mono',Consolas,monospace; }
+                  .blk { fill:#161b22; stroke:#30363d; }
+                  .blkG { fill:#1b2a1d; stroke:#3fb950; }
+                  .blkD { fill:#2a1c1c; stroke:#f85149; }
+                  .blkZ { fill:#1b1e2a; stroke:#bc8cff; }
+                  .blkY { fill:#2a261a; stroke:#f0883e; }
+                </style>
+              </defs>
+
+              <!-- Generator row -->
+              <text x="20" y="28" class="ttl">Generator  G(z) — 1D transposed convolutions, kernel=25, stride=4</text>
+
+              <rect x="20" y="50" width="80" height="60" rx="3" class="blkZ"/>
+              <text x="60" y="78" text-anchor="middle" class="lbl">z</text>
+              <text x="60" y="94" text-anchor="middle" class="sub">[100]  U[−1,1]</text>
+
+              <line x1="100" y1="80" x2="130" y2="80" stroke="#8b949e" marker-end="url(#arr)"/>
+
+              <rect x="130" y="50" width="100" height="60" rx="3" class="blkG"/>
+              <text x="180" y="74" text-anchor="middle" class="lbl">Dense + Reshape</text>
+              <text x="180" y="90" text-anchor="middle" class="sub">[16, 1024]</text>
+              <text x="180" y="103" text-anchor="middle" class="sub">ReLU</text>
+
+              <line x1="230" y1="80" x2="258" y2="80" stroke="#8b949e" marker-end="url(#arr)"/>
+
+              <rect x="258" y="50" width="92" height="60" rx="3" class="blkG"/>
+              <text x="304" y="74" text-anchor="middle" class="lbl">TConv1D ×4↑</text>
+              <text x="304" y="90" text-anchor="middle" class="sub">[64, 512]</text>
+              <text x="304" y="103" text-anchor="middle" class="sub">ReLU</text>
+
+              <line x1="350" y1="80" x2="378" y2="80" stroke="#8b949e" marker-end="url(#arr)"/>
+
+              <rect x="378" y="50" width="92" height="60" rx="3" class="blkG"/>
+              <text x="424" y="74" text-anchor="middle" class="lbl">TConv1D ×4↑</text>
+              <text x="424" y="90" text-anchor="middle" class="sub">[256, 256]</text>
+              <text x="424" y="103" text-anchor="middle" class="sub">ReLU</text>
+
+              <line x1="470" y1="80" x2="498" y2="80" stroke="#8b949e" marker-end="url(#arr)"/>
+
+              <rect x="498" y="50" width="92" height="60" rx="3" class="blkG"/>
+              <text x="544" y="74" text-anchor="middle" class="lbl">TConv1D ×4↑</text>
+              <text x="544" y="90" text-anchor="middle" class="sub">[1024, 128]</text>
+              <text x="544" y="103" text-anchor="middle" class="sub">ReLU</text>
+
+              <line x1="590" y1="80" x2="618" y2="80" stroke="#8b949e" marker-end="url(#arr)"/>
+
+              <rect x="618" y="50" width="92" height="60" rx="3" class="blkG"/>
+              <text x="664" y="74" text-anchor="middle" class="lbl">TConv1D ×4↑</text>
+              <text x="664" y="90" text-anchor="middle" class="sub">[4096, 64]</text>
+              <text x="664" y="103" text-anchor="middle" class="sub">ReLU</text>
+
+              <line x1="710" y1="80" x2="738" y2="80" stroke="#8b949e" marker-end="url(#arr)"/>
+
+              <rect x="738" y="50" width="120" height="60" rx="3" class="blkY"/>
+              <text x="798" y="74" text-anchor="middle" class="lbl">TConv1D ×4↑ · tanh</text>
+              <text x="798" y="90" text-anchor="middle" class="sub">G_z [16384, 1]</text>
+              <text x="798" y="103" text-anchor="middle" class="sub">16 kHz · ~1 s</text>
+
+              <!-- Adversarial loss arrow -->
+              <line x1="798" y1="110" x2="798" y2="180" stroke="#8b949e" stroke-dasharray="3,3"/>
+              <text x="808" y="148" class="sub">fake</text>
+
+              <!-- Real path -->
+              <rect x="20" y="180" width="120" height="40" rx="3" class="blk"/>
+              <text x="80" y="198" text-anchor="middle" class="lbl">Real audio x</text>
+              <text x="80" y="212" text-anchor="middle" class="sub">[16384, 1] · 16 kHz</text>
+              <line x1="140" y1="200" x2="170" y2="200" stroke="#8b949e" marker-end="url(#arr)"/>
+
+              <!-- Discriminator row -->
+              <text x="170" y="174" class="ttl">Discriminator  D(x)  —  strided 1D convs · Phase Shuffle · LeakyReLU(0.2)</text>
+
+              <rect x="170" y="185" width="80" height="40" rx="3" class="blkD"/>
+              <text x="210" y="200" text-anchor="middle" class="sub">Conv1D ↓4</text>
+              <text x="210" y="214" text-anchor="middle" class="sub">[4096,64]</text>
+
+              <rect x="260" y="185" width="80" height="40" rx="3" class="blkD"/>
+              <text x="300" y="200" text-anchor="middle" class="sub">Conv1D ↓4 + PS</text>
+              <text x="300" y="214" text-anchor="middle" class="sub">[1024,128]</text>
+
+              <rect x="350" y="185" width="80" height="40" rx="3" class="blkD"/>
+              <text x="390" y="200" text-anchor="middle" class="sub">Conv1D ↓4 + PS</text>
+              <text x="390" y="214" text-anchor="middle" class="sub">[256,256]</text>
+
+              <rect x="440" y="185" width="80" height="40" rx="3" class="blkD"/>
+              <text x="480" y="200" text-anchor="middle" class="sub">Conv1D ↓4 + PS</text>
+              <text x="480" y="214" text-anchor="middle" class="sub">[64,512]</text>
+
+              <rect x="530" y="185" width="80" height="40" rx="3" class="blkD"/>
+              <text x="570" y="200" text-anchor="middle" class="sub">Conv1D ↓4</text>
+              <text x="570" y="214" text-anchor="middle" class="sub">[16,1024]</text>
+
+              <rect x="620" y="185" width="120" height="40" rx="3" class="blkD"/>
+              <text x="680" y="200" text-anchor="middle" class="lbl">Dense → scalar</text>
+              <text x="680" y="214" text-anchor="middle" class="sub">D(·) ∈ ℝ</text>
+
+              <line x1="740" y1="205" x2="780" y2="205" stroke="#8b949e" marker-end="url(#arr)"/>
+              <rect x="780" y="185" width="80" height="40" rx="3" class="blkY"/>
+              <text x="820" y="207" text-anchor="middle" class="red">WGAN-GP</text>
+
+              <!-- Phase shuffle note -->
+              <text x="20" y="265" class="ttl">Notes</text>
+              <text x="20" y="285" class="lbl">• Phase Shuffle (n=2):</text>
+              <text x="180" y="285" class="sub">randomly shifts each D feature map by k ∈ [−2,+2] samples — kills the checkerboard artifact tell.</text>
+              <text x="20" y="303" class="lbl">• Loss:</text>
+              <text x="80" y="303" class="sub">min<sub>G</sub> max<sub>D</sub> 𝔼[D(x)] − 𝔼[D(G(z))]  +  λ · 𝔼[(‖∇<sub>x̂</sub>D(x̂)‖₂ − 1)²]   (Wasserstein + gradient penalty, λ=10)</text>
+              <text x="20" y="321" class="lbl">• Inference:</text>
+              <text x="80" y="321" class="sub">only G runs · tensors <code style="fill:#c9d1d9">z:0</code> → <code>G_z:0</code> in the TF1 graph · 64 "jewels" sampled per batch in the notebook.</text>
+              <text x="20" y="339" class="lbl">• Dataset here:</text>
+              <text x="105" y="339" class="sub">Kauaʻi forest stream + bird recordings · 2-sec clips · trained ~2403 steps (<code>wgtrain-stream-kauai-6-2sec</code>).</text>
+            </svg>
+
+            <div class="info" style="margin-top:10px">
+              <strong>Confirmation:</strong> The earlier link (arXiv:2210.15310, <em>wav2vec 2.0 for music</em>) does <em>not</em> match this codebase. WaveGAN is generative-adversarial (G vs D, WGAN-GP loss); wav2vec 2.0 is contrastive self-supervised (encoder → transformer → quantizer). Different families. This pak is WaveGAN.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+    <!-- Wiki/Reference panel (right side) -->
+    <aside class="wiki-panel" id="wiki-panel">
+      <div class="panel-handle panel-handle-left" id="wiki-handle"></div>
+      <div class="wiki-header">
+        <span id="wiki-title">Reference</span>
+        <button class="btn-sm" id="wiki-close">✕</button>
+      </div>
+      <div class="wiki-body" id="wiki-body"></div>
+    </aside>
+
+  </div> <!-- /content-wrap -->
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

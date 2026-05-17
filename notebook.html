@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>bird2vec notebook</title>
+  <style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root {
+  --bg: #0d1117;
+  --bg-alt: #161b22;
+  --bg-inset: #010409;
+  --border: #30363d;
+  --text: #c9d1d9;
+  --text-muted: #8b949e;
+  --blue: #58a6ff;
+  --green: #3fb950;
+  --red: #f85149;
+  --orange: #f0883e;
+  --cyan: #39d2c0;
+  --purple: #bc8cff;
+  --font: 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font: 13px/1.6 var(--font);
+}
+
+/* Toolbar */
+.nb-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--bg-alt);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.nb-toolbar h1 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--cyan);
+  margin-right: auto;
+}
+.nb-toolbar-btn {
+  background: #21262d;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 4px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font: 11px var(--font);
+}
+.nb-toolbar-btn:hover { background: #30363d; }
+.nb-toolbar-btn.primary {
+  background: #238636;
+  border-color: #2ea043;
+  color: #fff;
+}
+.nb-toolbar-btn.primary:hover { background: #2ea043; }
+
+/* Notebook container */
+#notebook {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px 24px 100px;
+}
+
+/* Cell */
+.nb-cell {
+  display: flex;
+  gap: 0;
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--bg-alt);
+  position: relative;
+}
+.nb-cell:focus-within {
+  border-color: var(--blue);
+}
+.nb-cell.nb-running { border-color: var(--orange); }
+.nb-cell.nb-error { border-color: var(--red); }
+.nb-cell.nb-done { border-color: var(--border); }
+
+/* Gutter */
+.nb-gutter {
+  width: 48px;
+  min-width: 48px;
+  background: var(--bg-inset);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 10px;
+  border-right: 1px solid var(--border);
+}
+.nb-idx {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.nb-running .nb-idx { color: var(--orange); }
+.nb-done .nb-idx { color: var(--green); }
+.nb-error .nb-idx { color: var(--red); }
+
+/* Body */
+.nb-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Source editor */
+.nb-source {
+  width: 100%;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font: 12px/1.5 var(--font);
+  resize: none;
+  outline: none;
+  overflow: hidden;
+}
+.nb-cell-markdown .nb-source {
+  font: 13px/1.6 var(--font-sans);
+  color: var(--text-muted);
+}
+
+/* Output area */
+.nb-output {
+  border-top: 1px solid var(--border);
+}
+.nb-output:empty { display: none; border: none; }
+
+.nb-text {
+  padding: 8px 14px;
+  font: 12px/1.5 var(--font);
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.nb-error {
+  padding: 8px 14px;
+  font: 12px/1.5 var(--font);
+  color: var(--red);
+  background: rgba(248,81,73,0.08);
+}
+
+.nb-html {
+  padding: 8px 14px;
+}
+
+.nb-markdown {
+  padding: 10px 14px;
+  font: 14px/1.7 var(--font-sans);
+  color: var(--text);
+}
+.nb-markdown h1 { font-size: 22px; margin-bottom: 8px; color: var(--text); }
+.nb-markdown h2 { font-size: 17px; margin-bottom: 6px; color: var(--text); }
+.nb-markdown h3 { font-size: 14px; margin-bottom: 4px; color: var(--text); }
+.nb-markdown code {
+  background: var(--bg-inset);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font: 12px var(--font);
+  color: var(--cyan);
+}
+
+/* Tables */
+.nb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font: 11px var(--font);
+}
+.nb-table th {
+  text-align: left;
+  padding: 4px 10px;
+  border-bottom: 2px solid var(--border);
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.nb-table td {
+  padding: 3px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nb-table tr:hover td { background: rgba(88,166,255,0.04); }
+
+/* Canvas outputs */
+.nb-canvas-wrap {
+  position: relative;
+  padding: 4px;
+}
+.nb-canvas-wrap canvas {
+  display: block;
+  width: 100%;
+  border-radius: 4px;
+}
+.nb-canvas-label {
+  position: absolute;
+  top: 10px;
+  left: 14px;
+  font: 11px var(--font);
+  color: var(--text-muted);
+}
+.nb-play-inline {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  background: rgba(35,134,54,0.8);
+  border: none;
+  color: #fff;
+  padding: 2px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  font: 10px var(--font);
+}
+.nb-play-inline:hover { background: #2ea043; }
+
+/* Cell toolbar (right side) */
+.nb-cell-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  background: var(--bg-inset);
+  border-left: 1px solid var(--border);
+}
+.nb-cell:hover .nb-cell-toolbar { opacity: 1; }
+
+.nb-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font: 11px var(--font);
+  padding: 2px 4px;
+  border-radius: 3px;
+  min-width: 22px;
+  text-align: center;
+}
+.nb-btn:hover { background: #30363d; color: var(--text); }
+.nb-btn-danger:hover { background: rgba(248,81,73,0.15); color: var(--red); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<div class="nb-toolbar">
+  <h1>bird2vec notebook</h1>
+  <button class="nb-toolbar-btn primary" id="nb-run-all">▶ Run All</button>
+  <button class="nb-toolbar-btn" id="nb-add-code">+ Code</button>
+  <button class="nb-toolbar-btn" id="nb-add-md">+ Markdown</button>
+  <button class="nb-toolbar-btn" id="nb-reset">Reset</button>
+  <a href="index.html" class="nb-toolbar-btn" style="text-decoration:none">Dashboard</a>
+</div>
+
+<div id="notebook"></div>
+
+<script type="module">
+  import { initNotebook } from './js/notebook/render.js';
+  document.addEventListener('DOMContentLoaded', initNotebook);
+</script>
+</body>
+</html>
