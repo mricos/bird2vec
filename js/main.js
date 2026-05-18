@@ -13,8 +13,9 @@ import { initSidebar, buildDimSliders } from './ui/sidebar.js';
 import { initTabs } from './ui/tabs.js';
 import { initDataPanel, renderDataTab } from './ui/data-panel.js';
 import { initWikiPanel } from './ui/wiki-panel.js';
-import { startSession, syntheticTrain } from './cbp/wiring.js';
+import { startSession, syntheticTrain, getRun } from './cbp/wiring.js';
 import { mountSonogeneTab } from './sonogene/panel.js';
+import { togglePanel, restoreIfOpen } from './cbp/mini-panel.js';
 
 // Generators
 let harmonicGen, waveganGen;
@@ -67,8 +68,15 @@ function init() {
   // Wire the Synthetic Train demo button if present (Metrics tab).
   document.getElementById('btn-synthetic-train')?.addEventListener('click', () => syntheticTrain(200));
   document.getElementById('btn-open-coilboard')?.addEventListener('click', () => {
-    window.open('/coilboard.iframe.html', '_blank');
+    window.open('/coilboard/iframes/coilboard.iframe.html', '_blank');
   });
+  document.getElementById('btn-mini-coilboard')?.addEventListener('click', () => {
+    const run = getRun();
+    togglePanel(run ? run.id : null);
+  });
+
+  // Restore the floating mini-Coilboard if user had it open last session.
+  restoreIfOpen(() => getRun()?.id);
 }
 
 function initJewels() {
