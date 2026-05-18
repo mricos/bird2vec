@@ -102,7 +102,7 @@
             Based on WaveGAN.
           </p>
           <p style="margin-top:6px;color:var(--text-muted)">
-            Keys: 1-9 tabs · Esc close panel
+            Keys: 1-9+ tabs · Esc close panel
           </p>
         </div>
       </details>
@@ -125,6 +125,7 @@
         <button class="tab-btn" data-tab="gan">GAN</button>
         <button class="tab-btn" data-tab="sonogene">Sonogene</button>
         <button class="tab-btn" data-tab="sono">Sono</button>
+        <button class="tab-btn" data-tab="dataset">Dataset</button>
       </nav>
 
       <!-- Tab content -->
@@ -408,6 +409,9 @@
 
         <!-- Sono tab — synthetic generator for GAN training -->
         <div class="tab-pane" id="tab-sono"></div>
+
+        <!-- Dataset Builder tab — multi-archetype → HF-flavored dataset -->
+        <div class="tab-pane" id="tab-dataset"></div>
 
       </div>
     </div>
