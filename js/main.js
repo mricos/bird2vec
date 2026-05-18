@@ -15,6 +15,7 @@ import { initDataPanel, renderDataTab } from './ui/data-panel.js';
 import { initWikiPanel } from './ui/wiki-panel.js';
 import { startSession, syntheticTrain, getRun } from './cbp/wiring.js';
 import { mountSonogeneTab } from './sonogene/panel.js';
+import { mountSonoTab } from './sono/panel.js';
 import { togglePanel, restoreIfOpen } from './cbp/mini-panel.js';
 
 // Generators
@@ -195,6 +196,10 @@ function renderActiveTab() {
 
   if (tab === 'sonogene') {
     mountSonogeneTab();
+  }
+
+  if (tab === 'sono') {
+    mountSonoTab();
   }
 
   if (tab === 'jewels') {

@@ -3,6 +3,7 @@
 
 import { extractSonogene, sonogeneVector } from './extract.js';
 import state from '../core/state.js';
+import { setSonogene } from './store.js';
 
 let mounted = false;
 let lastGene = null;
@@ -96,6 +97,7 @@ function runExtract(samples, sampleRate, label) {
     const gene = extractSonogene(samples, sampleRate);
     gene._source = label;
     lastGene = gene;
+    setSonogene(gene);  // publish to shared store — Sono tab reads here
     const ms = Math.round(performance.now() - t0);
     setStatus(`Extracted in ${ms} ms · ${gene.meta.nFrames} frames · median F0 ${gene.medianF0} Hz · ${gene.syllables.length} syllables`);
     document.getElementById('sg-results').style.display = '';
