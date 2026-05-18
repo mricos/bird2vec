@@ -133,75 +133,120 @@
 
         <!-- Data tab -->
         <div class="tab-pane" id="tab-data">
-          <div class="data-section">
-            <h3 class="section-title">Xeno-Canto Bird Recordings (API v3)</h3>
-            <div class="search-row" style="margin-bottom:6px">
-              <input type="password" id="xc-key" class="text-input" placeholder="API key (xeno-canto.org account)" style="flex:0 0 180px">
-            </div>
-            <div class="search-row">
-              <input type="text" id="xc-query" class="text-input" placeholder='en:"common blackbird"' value='en:"common blackbird"'>
-              <button class="btn btn-primary" id="btn-xc-search">Search</button>
-            </div>
-            <div class="info" style="margin-top:4px">Tags: <code>en:</code> <code>gen:</code> <code>sp:</code> <code>cnt:</code> <code>q:</code> <code>type:song</code></div>
-            <div id="xc-results" class="xc-results"></div>
-          </div>
 
-          <div class="data-section">
-            <h3 class="section-title">Extinct & Critically Endangered <span style="color:var(--text-muted);font-weight:normal">— voices to preserve</span></h3>
-            <div class="info" style="margin-bottom:8px">
-              One-click load curated species. This pak's existing checkpoint
-              (<code>wgtrain-stream-kauai-6-2sec</code>) was trained on Kauaʻi field
-              recordings — these species share that acoustic context. Recording
-              the latent space of a bird that no longer sings is the point of
-              "tubes of dust."
-            </div>
-            <div id="extinct-chips" class="btn-row" style="flex-wrap:wrap;gap:6px"></div>
-            <div class="info" style="margin-top:6px;font-size:10px">
-              ▸ Clicking a chip populates the search box and runs the query · then use <strong>+ Add</strong> on each result, or <strong>Add all</strong> below to bulk-ingest at quality A.
-            </div>
-            <div class="btn-row" style="margin-top:6px">
-              <button class="btn" id="btn-xc-add-all">Add all results to dataset</button>
-              <button class="btn" id="btn-extinct-prep">Recommend prep settings</button>
-            </div>
-            <div id="extinct-prep-out" class="info" style="margin-top:6px"></div>
-          </div>
-
-          <div class="data-section">
-            <h3 class="section-title">Local Audio Files</h3>
-            <div class="info" style="margin-bottom:8px">WAV, MP3, OGG, FLAC — decoded and sliced into training chunks</div>
-            <label class="file-label">
-              <input type="file" id="file-input" accept="audio/*" multiple hidden>
-              <span class="btn">Choose Files</span>
-            </label>
-          </div>
-
-          <div class="data-section">
-            <h3 class="section-title">Synthetic Data</h3>
-            <div class="synth-row">
-              <label>Samples</label>
-              <input type="number" id="synthetic-count" class="text-input" value="50" min="1" max="500" style="width:80px">
-              <button class="btn" id="btn-synthetic">Generate</button>
+          <!-- 1. Status bar — always visible -->
+          <div class="data-section" id="data-statusbar" style="position:sticky;top:0;z-index:3;background:var(--bg-alt);border:1px solid var(--border);border-radius:4px;padding:8px 10px">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <strong style="color:var(--blue)">Dataset</strong>
+              <span id="dataset-info-inline" class="info">No training data loaded</span>
+              <span style="flex:1"></span>
+              <button class="btn" id="btn-clear-data">Clear all</button>
             </div>
           </div>
 
-          <div class="data-section">
-            <h3 class="section-title">Dataset</h3>
-            <div id="dataset-info"><span class="info">No training data loaded</span></div>
-            <div class="btn-row" style="margin-top:8px">
-              <button class="btn" id="btn-clear-data">Clear All</button>
+          <!-- 2. Quickstart — the recommended one-click path -->
+          <div class="data-section" style="border:1px solid var(--blue);border-radius:4px;padding:12px;background:rgba(88,166,255,0.06)">
+            <div style="display:flex;align-items:flex-start;gap:10px">
+              <div style="flex:1">
+                <h3 class="section-title" style="color:var(--blue);margin-bottom:4px">▶ Quickstart · 2-species z-cruise demo</h3>
+                <div class="info" style="font-size:11px">
+                  400 chunks (200 whistler + 200 buzzer) synthesized from sonogene archetypes.
+                  No network, no API key, ~2 seconds. Ready to feed into WaveGAN training.
+                </div>
+              </div>
+              <button class="btn btn-primary" id="btn-quickstart" style="white-space:nowrap">Build & add</button>
             </div>
+            <div id="quickstart-status" style="margin-top:6px;font-size:11px;color:var(--text-muted)"></div>
           </div>
 
+          <!-- 3. Source picker — three options, expandable details -->
+          <div class="data-section">
+            <h3 class="section-title" style="margin-bottom:6px">Or pick a source</h3>
+
+            <details class="source-card" data-source="synth">
+              <summary style="cursor:pointer;padding:8px 10px;border:1px solid var(--border);border-radius:4px;background:var(--bg-alt);user-select:none">
+                <span style="color:var(--purple);font-weight:bold">●</span>
+                <strong style="margin-left:6px">Sonogene archetypes</strong>
+                <span class="data-tag" style="margin-left:6px;background:var(--green);color:#000">recommended</span>
+                <span style="color:var(--text-muted);margin-left:6px;font-size:10px">parametric · no network · ~1 ms/chunk</span>
+              </summary>
+              <div style="padding:10px;border:1px solid var(--border);border-top:none;border-radius:0 0 4px 4px">
+                <div class="info" style="margin-bottom:8px">
+                  Sono takes a sonogene record and generates audio matching its
+                  parameter signature. Perturb it (σ) and you get a cloud of
+                  variations. → Use the <strong>Dataset</strong> tab for the full builder UI,
+                  or click below to load a preset and build immediately.
+                </div>
+                <div class="btn-row">
+                  <button class="btn btn-primary" data-quickbuild="birdcalls-2species">Build birdcalls-2species (400 chunks)</button>
+                  <button class="btn btn-primary" data-quickbuild="birdcalls-kauai">Build birdcalls-kauai (1000 chunks)</button>
+                </div>
+                <div id="synth-status" style="margin-top:6px;font-size:11px;color:var(--text-muted)"></div>
+                <div class="info" style="margin-top:6px;font-size:10px">
+                  Procedural data still uses Sono — for the original tone-burst synth,
+                  use <strong>Generate procedural</strong>:
+                  <input type="number" id="synthetic-count" class="text-input" value="50" min="1" max="500" style="width:60px;margin-left:4px">
+                  <button class="btn" id="btn-synthetic" style="margin-left:4px">Go</button>
+                </div>
+              </div>
+            </details>
+
+            <details class="source-card" data-source="xc" style="margin-top:6px">
+              <summary style="cursor:pointer;padding:8px 10px;border:1px solid var(--border);border-radius:4px;background:var(--bg-alt);user-select:none">
+                <span style="color:var(--orange);font-weight:bold">●</span>
+                <strong style="margin-left:6px">xeno-canto recordings</strong>
+                <span class="data-tag" id="xc-status-pill" style="margin-left:6px">checking…</span>
+                <span style="color:var(--text-muted);margin-left:6px;font-size:10px">real field recordings · needs API key</span>
+              </summary>
+              <div style="padding:10px;border:1px solid var(--border);border-top:none;border-radius:0 0 4px 4px">
+                <div id="xc-key-banner" style="font-size:10px;color:var(--text-muted);margin-bottom:8px"></div>
+                <div class="search-row" style="margin-bottom:4px">
+                  <input type="password" id="xc-key" class="text-input" placeholder="API key (xeno-canto.org account, optional if proxy has one)" style="flex:1">
+                </div>
+                <div class="search-row">
+                  <input type="text" id="xc-query" class="text-input" placeholder='gen:moho sp:braccatus q:A' value='gen:moho sp:braccatus q:A'>
+                  <button class="btn btn-primary" id="btn-xc-search">Search</button>
+                </div>
+                <div class="info" style="margin-top:4px;font-size:10px">Tags: <code>en:</code> <code>gen:</code> <code>sp:</code> <code>cnt:</code> <code>q:</code> <code>type:song</code></div>
+                <div id="xc-results" class="xc-results"></div>
+
+                <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px">
+                  <div style="font-size:11px;color:var(--ink);margin-bottom:4px"><strong>Curated extinct & CR species</strong> — one-click load</div>
+                  <div id="extinct-chips" class="btn-row" style="flex-wrap:wrap;gap:4px"></div>
+                  <div class="btn-row" style="margin-top:6px">
+                    <button class="btn" id="btn-xc-add-all">Add all results</button>
+                    <button class="btn" id="btn-extinct-prep">Prep tips</button>
+                  </div>
+                  <div id="extinct-prep-out" class="info" style="margin-top:4px;font-size:10px"></div>
+                </div>
+              </div>
+            </details>
+
+            <details class="source-card" data-source="local" style="margin-top:6px">
+              <summary style="cursor:pointer;padding:8px 10px;border:1px solid var(--border);border-radius:4px;background:var(--bg-alt);user-select:none">
+                <span style="color:var(--cyan);font-weight:bold">●</span>
+                <strong style="margin-left:6px">Local audio files</strong>
+                <span style="color:var(--text-muted);margin-left:6px;font-size:10px">WAV / MP3 / OGG / FLAC · sliced into chunks</span>
+              </summary>
+              <div style="padding:10px;border:1px solid var(--border);border-top:none;border-radius:0 0 4px 4px">
+                <div class="info" style="margin-bottom:6px">Decoded at <code>state.sampleRate</code> Hz, sliced into <code>state.audioLength</code>-sample chunks (50% overlap).</div>
+                <label class="file-label">
+                  <input type="file" id="file-input" accept="audio/*" multiple hidden>
+                  <span class="btn btn-primary">Choose files…</span>
+                </label>
+              </div>
+            </details>
+          </div>
+
+          <!-- 4. Preview canvases — only shown when something's loaded -->
           <div class="canvas-row" style="margin-top:12px">
-            <div class="canvas-wrap">
-              <canvas id="canvas-data-preview" height="180"></canvas>
-            </div>
-            <div class="canvas-wrap">
-              <canvas id="canvas-data-spec" height="180"></canvas>
-            </div>
+            <div class="canvas-wrap"><canvas id="canvas-data-preview" height="160"></canvas></div>
+            <div class="canvas-wrap"><canvas id="canvas-data-spec"    height="160"></canvas></div>
           </div>
 
-          <div id="data-status" class="data-status"></div>
+          <!-- Hidden detail panel used by older code paths -->
+          <div id="dataset-info" style="display:none"></div>
+          <div id="data-status" class="data-status" style="font-size:10px;color:var(--text-muted);margin-top:4px"></div>
         </div>
 
         <!-- Generate tab -->

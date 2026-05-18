@@ -101,8 +101,102 @@ function recommendPrep() {
   `;
 }
 
+// ── Quickstart + source-card wiring (tightened UI, 2026-05-17) ───────────────
+
+async function probeXcProxy() {
+    try {
+        const r = await fetch('/api/bird2vec/health');
+        if (!r.ok) return { ok: false, hasKey: false };
+        return await r.json();
+    } catch { return { ok: false, hasKey: false }; }
+}
+
+async function refreshXcStatus() {
+    const pill   = $('xc-status-pill');
+    const banner = $('xc-key-banner');
+    if (!pill) return;
+    const h = await probeXcProxy();
+    if (h.ok && h.hasKey) {
+        pill.textContent = 'proxy ✓ key ✓';
+        pill.style.background = 'var(--green)'; pill.style.color = '#000';
+        if (banner) banner.innerHTML = '<strong>Server proxy is configured</strong> — your XC key never touches this page. Searches route through <code>/api/bird2vec/search</code> with a proper User-Agent (avoids Cloudflare bot block).';
+    } else if (h.ok) {
+        pill.textContent = 'proxy ✓ key ✗';
+        pill.style.background = 'var(--orange)'; pill.style.color = '#000';
+        if (banner) banner.innerHTML = '<strong>Server proxy is running but no key is set.</strong> Either drop one in <code>~/tetra/bird2vec/keys.toml</code> + restart <code>tetra-4444</code>, or paste it in the field below (browser-side, will trip Cloudflare on heavy use).';
+    } else {
+        pill.textContent = 'proxy ✗';
+        pill.style.background = 'var(--red)'; pill.style.color = '#fff';
+        if (banner) banner.innerHTML = '<strong>Server proxy unreachable</strong> (paks/bird2vec/api/router.js not loaded). Restart tetra-4444 to enable the proxy, or paste a client-side key below.';
+    }
+}
+
+function renderDatasetInline() {
+    const el = $('dataset-info-inline');
+    if (!el) return;
+    const ds = state.dataset;
+    if (!ds || !ds.chunks.length) { el.textContent = 'No training data loaded'; return; }
+    const species = {};
+    for (const m of ds.meta) {
+        const k = m.species || m.file || 'unknown';
+        species[k] = (species[k] || 0) + 1;
+    }
+    const sec = (ds.chunks.length * state.audioLength / state.sampleRate).toFixed(1);
+    const tags = Object.entries(species).map(([k, n]) => `<span class="data-tag">${k} (${n})</span>`).join(' ');
+    el.innerHTML = `<strong>${ds.chunks.length} chunks</strong> · ${sec}s total · ${tags}`;
+}
+
+async function runQuickbuild(presetName, statusElId = 'quickstart-status') {
+    const el = $(statusElId);
+    const presets = {
+        'birdcalls-2species': { files: ['whistler.json', 'buzzer.json'],                                                  defaultsN: 200, sigma: 0.30 },
+        'birdcalls-kauai':    { files: ['kauai-ooo.json', 'kamao.json', 'pouli.json', 'akikiki.json', 'akekee.json'],     defaultsN: 200, sigma: 0.25 },
+    };
+    const preset = presets[presetName];
+    if (!preset) return;
+    if (el) el.textContent = `Loading ${preset.files.length} archetypes from /coilflow-neural/datasets/${presetName}/sonogenes/…`;
+
+    // Lazy-import sono so the Data tab doesn't carry sono weight for everyone
+    const [{ sonoSynthesize, perturbSonogene }, { addToDataset }] = await Promise.all([
+        import('../nn/sono.js'),
+        import('../data/fetch-birds.js'),
+    ]);
+
+    let totalChunks = 0;
+    for (const file of preset.files) {
+        try {
+            const r = await fetch(`/coilflow-neural/datasets/${presetName}/sonogenes/${file}`);
+            if (!r.ok) throw new Error(r.status + ' ' + r.statusText);
+            const gene = await r.json();
+            gene._source = gene._source || file;
+            const label = file.replace(/\.json$/, '');
+            const chunks = [];
+            for (let i = 0; i < preset.defaultsN; i++) {
+                const g = perturbSonogene(gene, preset.sigma);
+                chunks.push(sonoSynthesize(g, { sampleRate: state.sampleRate, audioLength: state.audioLength }));
+            }
+            addToDataset(chunks, { species: label, kind: 'synthetic_from_sonogene', sigma: preset.sigma, sonogene_source: gene._source });
+            totalChunks += chunks.length;
+            if (el) el.textContent = `Built ${label}: ${chunks.length} chunks · running total ${totalChunks}…`;
+            // yield to UI between classes
+            await new Promise(rr => setTimeout(rr, 0));
+        } catch (e) {
+            if (el) el.innerHTML = `<span style="color:var(--red)">Failed on ${file}: ${e.message}</span> — is <code>/coilflow-neural/</code> mounted? (Check pak.json + tetra-4444 restart.)`;
+            return;
+        }
+    }
+    if (el) el.innerHTML = `<strong style="color:var(--green)">Done</strong> · ${totalChunks} chunks added across ${preset.files.length} classes. Now: switch to <strong>Metrics</strong> for live training scalars, or use the <strong>Dataset</strong> tab for more control.`;
+    renderDatasetInline();
+}
+
 export function initDataPanel() {
   renderExtinctChips();
+  refreshXcStatus();
+  renderDatasetInline();
+  $('btn-quickstart')?.addEventListener('click', () => runQuickbuild('birdcalls-2species', 'quickstart-status'));
+  for (const btn of document.querySelectorAll('[data-quickbuild]')) {
+      btn.addEventListener('click', () => runQuickbuild(btn.dataset.quickbuild, 'synth-status'));
+  }
   $('btn-xc-add-all')?.addEventListener('click', addAllResults);
   $('btn-extinct-prep')?.addEventListener('click', recommendPrep);
   // API key
@@ -163,7 +257,7 @@ export function initDataPanel() {
 
   // Status updates
   on('data:status', ({ msg }) => setStatus(msg));
-  on('data:updated', () => renderDatasetInfo());
+  on('data:updated', () => { renderDatasetInfo(); renderDatasetInline(); });
 }
 
 function setStatus(msg) {
