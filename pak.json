@@ -23,5 +23,8 @@
   "mount": [
     { "path": "/bird2vec", "root": "./" }
   ],
+  "api": [
+    { "path": "/api/bird2vec", "file": "api/router.js" }
+  ],
   "dependencies": { "tetra": ">=1.0", "paks": [] }
 }
